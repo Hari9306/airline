@@ -1,0 +1,147 @@
+			schmea
+-- 1. Users Table
+CREATE TABLE users (
+    user_id INT PRIMARY KEY,
+    username VARCHAR(50) NOT NULL,
+    password VARCHAR(50) NOT NULL
+);
+
+-- 2. Flight Table
+CREATE TABLE flight (
+    flight_id INT PRIMARY KEY,
+    flight_number VARCHAR(10) UNIQUE NOT NULL,
+    airline_name VARCHAR(100),
+    source_airport VARCHAR(50) NOT NULL,
+    destination_airport VARCHAR(50) NOT NULL
+);
+
+-- 3. Flight Schedule Table
+CREATE TABLE flight_schedule (
+    schedule_id INT PRIMARY KEY,
+    flight_id INT NOT NULL,
+    journey_date DATE NOT NULL,
+    departure_time VARCHAR(10),
+    arrival_time VARCHAR(10),
+    available_seats INT,
+    FOREIGN KEY (flight_id) REFERENCES flight(flight_id)
+);
+
+
+-- 4. Aircraft Table
+CREATE TABLE aircraft (
+    aircraft_id INT PRIMARY KEY,
+    schedule_id INT NOT NULL,
+    cabin_class VARCHAR(20),
+    total_seats INT,
+    FOREIGN KEY (schedule_id) REFERENCES flight_schedule(schedule_id)
+);
+
+-- 5. Seat Table
+CREATE TABLE seat (
+    seat_id INT PRIMARY KEY,
+    aircraft_id INT NOT NULL,
+    seat_number VARCHAR(10) NOT NULL,
+    seat_status VARCHAR(20) DEFAULT 'AVAILABLE',
+    FOREIGN KEY (aircraft_id) REFERENCES aircraft(aircraft_id)
+);
+
+-- 6. Booking Table
+CREATE TABLE booking (
+    booking_id INT PRIMARY KEY,
+    user_id INT NOT NULL,
+    schedule_id INT NOT NULL,
+    booking_date DATE DEFAULT SYSDATE,
+    booking_status VARCHAR(20),
+    FOREIGN KEY (user_id) REFERENCES users(user_id),
+    FOREIGN KEY (schedule_id) REFERENCES flight_schedule(schedule_id)
+);
+-- 7. Passenger Table 
+CREATE TABLE passenger (
+    passenger_id INT PRIMARY KEY,
+    booking_id INT NOT NULL,
+    seat_id INT NOT NULL,
+    passenger_name VARCHAR(100) NOT NULL,
+    age INT,
+    gender VARCHAR(10),
+    proof_type VARCHAR(50),     -- new column for proof type (e.g., Passport, Aadhaar)
+    proof_number VARCHAR(50),   -- new column for proof number
+    FOREIGN KEY (booking_id) REFERENCES booking(booking_id),
+    FOREIGN KEY (seat_id) REFERENCES seat(seat_id)
+);
+
+
+
+INSERT INTO users VALUES (1,'admin','123');
+
+
+SELECT * FROM users;
+
+
+INSERT INTO flight VALUES (1,'AI101','Air India','Hyderabad','Delhi');
+INSERT INTO flight VALUES (2,'6E202','Indigo','Chennai','Mumbai');
+
+INSERT INTO flight_schedule VALUES
+(1,1,DATE '2026-03-01','10:00','12:30',50);
+
+INSERT INTO flight_schedule VALUES
+(2,2,DATE '2026-03-02','15:00','17:00',60);
+
+
+INSERT INTO users VALUES (3,'gopi','1234');
+
+
+
+INSERT INTO aircraft VALUES (1,1,'Mixed',60);
+INSERT INTO aircraft VALUES (2,2,'Mixed',60);
+
+select * from aircraft;
+truncate table aircraft;
+
+
+BEGIN
+  FOR r IN ASCII('A')..ASCII('K') LOOP
+    FOR c IN 1..6 LOOP
+
+      -- First class → only 3 seats in A,B rows
+      IF CHR(r) IN ('A','B') AND c > 3 THEN
+        NULL;
+
+      ELSE
+        INSERT INTO seat VALUES(
+          (SELECT NVL(MAX(seat_id),0)+1 FROM seat),
+          1,
+          CHR(r)||c,
+          'AVAILABLE'
+        );
+      END IF;
+
+    END LOOP;
+  END LOOP;
+END;
+/
+BEGIN
+  FOR r IN ASCII('A')..ASCII('K') LOOP
+    FOR c IN 1..6 LOOP
+
+      IF CHR(r) IN ('A','B') AND c > 3 THEN
+        NULL;
+      ELSE
+        INSERT INTO seat VALUES(
+          (SELECT NVL(MAX(seat_id),0)+1 FROM seat),
+          2,
+          CHR(r)||c,
+          'AVAILABLE'
+        );
+      END IF;
+
+    END LOOP;
+  END LOOP;
+END;
+/
+
+commit;
+TRUNCATE TABLE passenger;
+select * from passenger;
+select * from seat;
+commit;
+TRUNCATE TABLE seat;
